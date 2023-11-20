@@ -2,8 +2,9 @@ import sys
 import pysam
 
 vcf_path = sys.argv[1]
-threshold = float(sys.argv[2])
-group_size = int(sys.argv[3])
+threshold = float(sys.argv[2]) # The max number of base pairs i.e. distance between two SNPs to be considered
+group_size = int(sys.argv[3]) # # Max grouping size of the haplotypes
+spa_criterion = int(sys.argv[4]) # The max number of distinct groups (apart from itself) in which an allele can be present to be classified as a semi-private allele
 
 vcf = pysam.VariantFile(vcf_path)
 
@@ -90,9 +91,9 @@ for key, values in sample_alleles.items():
             if allele in values2:
                 count += 1
                 idx.append(key2) 
-            if count > 2:
+            if count > spa_criterion+1:
                 break
-        if len(idx) == 1:
+        if len(idx) == spa_criterion+1:
             spa_counts[key][my_keys.index(idx[0])] += 1
 
 print(spa_counts['AGT05'])
