@@ -91,10 +91,11 @@ for key, values in sample_alleles.items():
             if allele in values2:
                 count += 1
                 idx.append(key2) 
-            if count > spa_criterion+1:
+            if count > spa_criterion+2:
                 break
-        if len(idx) == spa_criterion+1:
-            spa_counts[key][my_keys.index(idx[0])] += 1
+        if len(idx) <= spa_criterion+1:
+            for i in idx:
+                spa_counts[key][my_keys.index(i)] += 1
 
 print(spa_counts['AGT05'])
 
