@@ -70,12 +70,18 @@ def calculate_genetic_distance(row):
     animal = row['animal_id_1']
     same_breeds = df[(df['animal_id_2'] == animal) & (df['population_animal_id_1_belongs_to'] == row['population_animal_id_1_belongs_to'])]
     mUARi = same_breeds['UAR score'].mean()
-    mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
+    mUARmp = df[df['population_animal_id_1_belongs_to'] == row['population_animal_id_1_belongs_to']]['UAR score'].mean()
+    # mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
+    if row['animal_id_1'] == 'APPgoat1':
+        print(same_breeds)
+        print("------------------")
+        print(mean_uar_population[mean_uar_population['population'] == row['population_animal_id_1_belongs_to']])
+        print(f'{row["animal_id_1"]}, mUARi: {mUARi}, mUARmp: {mUARmp}, mUARi + mUARmp: {mUARi + mUARmp}')
 
     # mUARi = animal_mean_uar.loc[animal_mean_uar['animal_id'] == row['animal_id_1'], 'mean_UAR'].values[0]
     # mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
     # print(f'{row["animal_id_1"]}, mUARi: {mUARi}, mUARmp: {mUARmp}, mUARi + mUARmp: {mUARi + mUARmp}')
-    genetic_distance = -math.log(abs(mUARi + mUARmp))
+    genetic_distance = -math.log(mUARi + mUARmp)
     return genetic_distance
 
 # df['Genetic Distance'] = df.apply(calculate_genetic_distance, axis=1)
