@@ -12,12 +12,12 @@ import math
 # df = pd.DataFrame(data)
 
 # Read the file
-uar_file_path = '/home/ra42nig/Neza stuff/Outlier/DRZdivAlp1M_DRZdivA1m025_PLINK.uar'  
+uar_file_path = './examples/DRZdivAlp1M_DRZdivA1m025_PLINK.uar'  
 with open(uar_file_path, 'r') as file:
     lines = file.readlines()
 
 # Get the population of each animal
-pop_file = '/home/ra42nig/Neza stuff/Outlier/PhyloGen - output of UAR and input-output of Outlier/Erge/snpDB/IBD/mvOutlier/Goat/DRZdivAlp1M.uTiere.TxT'
+pop_file = './examples/DRZdivAlp1M.uTiere.TxT'
 with open(pop_file, 'r') as file:
     pop_lines = file.readlines()
     pop_dict = {}
@@ -46,18 +46,34 @@ print(df)
 
 # a = input('Matrix created. Press enter to continue...')
 
-# Calculate mean UAR for each animal across the population
-animal_mean_uar = df.groupby('animal_id_1')['UAR score'].mean().reset_index()
-animal_mean_uar.columns = ['animal_id', 'mean_UAR']
+def get_mean_uar(row):
+    animal2 = row['animal_id_2']
+    pop = row['population_animal_id_1_belongs_to']
+    return row if pop_dict[animal2] == pop else None
 
-# Calculate mean UAR for the entire population
+# # Calculate mean UAR for each animal across the population
+# grouped_by_pop = df.apply(get_mean_uar, axis=1)
+# print(grouped_by_pop)
+
+# a = input('Matrix created. Press enter to continue...')
+
+# animal_mean_uar = df.groupby('animal_id_1')['UAR score'].mean().reset_index()
+# animal_mean_uar.columns = ['animal_id', 'mean_UAR']
+
+# Calculate mean UAR for the each population
 mean_uar_population = df.groupby('population_animal_id_1_belongs_to')['UAR score'].mean().reset_index()
 mean_uar_population.columns = ['population', 'mean_UAR']
 
+
 # Calculate genetic distance for each row
 def calculate_genetic_distance(row):
-    mUARi = animal_mean_uar.loc[animal_mean_uar['animal_id'] == row['animal_id_1'], 'mean_UAR'].values[0]
+    animal = row['animal_id_1']
+    same_breeds = df[(df['animal_id_2'] == animal) & (df['population_animal_id_1_belongs_to'] == row['population_animal_id_1_belongs_to'])]
+    mUARi = same_breeds['UAR score'].mean()
     mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
+
+    # mUARi = animal_mean_uar.loc[animal_mean_uar['animal_id'] == row['animal_id_1'], 'mean_UAR'].values[0]
+    # mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
     # print(f'{row["animal_id_1"]}, mUARi: {mUARi}, mUARmp: {mUARmp}, mUARi + mUARmp: {mUARi + mUARmp}')
     genetic_distance = -math.log(abs(mUARi + mUARmp))
     return genetic_distance
