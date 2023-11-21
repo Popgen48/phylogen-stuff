@@ -2,15 +2,49 @@ import pandas as pd
 import numpy as np
 import math
 
-# Sample DataFrame
-data = {
-    'population_animal_id_1_belongs_to': ['pop1', 'pop1', 'pop2', 'pop2', 'pop2'],
-    'animal_id_1': ['A1', 'A1', 'A2', 'A2', 'A3'],
-    'animal_id_2': ['A2', 'A3', 'A1', 'A3', 'A1'],
-    'UAR score': [0.987, 0.767, 0.987, 0.123, 0.766]
-}
+# # Sample DataFrame
+# data = {
+#     'population_animal_id_1_belongs_to': ['pop1', 'pop1', 'pop2', 'pop2', 'pop2'],
+#     'animal_id_1': ['A1', 'A1', 'A2', 'A2', 'A3'],
+#     'animal_id_2': ['A2', 'A3', 'A1', 'A3', 'A1'],
+#     'UAR score': [0.987, 0.767, 0.987, 0.123, 0.766]
+# }
+# df = pd.DataFrame(data)
 
-df = pd.DataFrame(data)
+# Read the file
+uar_file_path = '/home/ra42nig/Neza stuff/Outlier/DRZdivAlp1M_DRZdivA1m025_PLINK.uar'  
+with open(uar_file_path, 'r') as file:
+    lines = file.readlines()
+
+# Get the population of each animal
+pop_file = '/home/ra42nig/Neza stuff/Outlier/PhyloGen - output of UAR and input-output of Outlier/Erge/snpDB/IBD/mvOutlier/Goat/DRZdivAlp1M.uTiere.TxT'
+with open(pop_file, 'r') as file:
+    pop_lines = file.readlines()
+    pop_dict = {}
+    for line in pop_lines:
+        parts = line.split()
+        animal_id = parts[1]
+        pop = parts[2]
+        pop_dict[animal_id] = pop
+
+# Process the data
+data = []
+header = lines[0].split()  # Extract column headers
+
+for line in lines[1:]:
+    parts = line.split()
+    row_label = parts[0]
+    values = parts[1:]
+    for col_label, value in zip(header, values):
+        if col_label == row_label:
+            continue
+        data.append([pop_dict[row_label], row_label, col_label, float(value)])
+
+# Create DataFrame
+df = pd.DataFrame(data, columns=['population_animal_id_1_belongs_to', 'animal_id_1', 'animal_id_2', 'UAR score'])
+print(df)
+
+# a = input('Matrix created. Press enter to continue...')
 
 # Calculate mean UAR for each animal across the population
 animal_mean_uar = df.groupby('animal_id_1')['UAR score'].mean().reset_index()
@@ -24,7 +58,8 @@ mean_uar_population.columns = ['population', 'mean_UAR']
 def calculate_genetic_distance(row):
     mUARi = animal_mean_uar.loc[animal_mean_uar['animal_id'] == row['animal_id_1'], 'mean_UAR'].values[0]
     mUARmp = mean_uar_population.loc[mean_uar_population['population'] == row['population_animal_id_1_belongs_to'], 'mean_UAR'].values[0]
-    genetic_distance = -math.log(mUARi + mUARmp)
+    # print(f'{row["animal_id_1"]}, mUARi: {mUARi}, mUARmp: {mUARmp}, mUARi + mUARmp: {mUARi + mUARmp}')
+    genetic_distance = -math.log(abs(mUARi + mUARmp))
     return genetic_distance
 
 # df['Genetic Distance'] = df.apply(calculate_genetic_distance, axis=1)
@@ -68,8 +103,6 @@ def calculate_max_uar_p(row):
     return max_uar_p if not pd.isnull(max_uar_p) else 0.0  # If no interactions with foreign breeds, return 0
 
 # df['maxUAR(P)'] = df.apply(calculate_max_uar_p, axis=1)
-
-print(df)
 
 # Get unique animal_id values
 unique_animals = pd.unique(df[['animal_id_1', 'animal_id_2']].values.ravel('K'))

@@ -1,3 +1,5 @@
+# Usage: python3 get_sp_alleles.py <vcf_path> <threshold> <grouping_size> <spa_criterion>
+
 import sys
 import pysam
 
