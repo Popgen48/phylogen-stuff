@@ -16,14 +16,15 @@ pop_file = './examples/DRZdivAlp1M.uTiere.TxT'
 with open(pop_file, 'r') as file:
     pop_lines = file.readlines()
     pop_dict = {}
-    pops = []
+    n_pop = {}
     for line in pop_lines:
         parts = line.split()
         animal_id = parts[1]
         pop = parts[2]
-        if pop not in pops:
-            pops.append(pop)
+        if pop not in n_pop:
+            n_pop[pop] = 0
         pop_dict[animal_id] = pop
+        n_pop[pop] += 1
 
 sample_alleles = {}
 previous_record = None
@@ -125,29 +126,48 @@ for key, values in sample_alleles.items():
             for i in idx:
                 spa_counts[key][my_keys.index(i)] += 1
 
-result_data = []
+temp_data = []
 
 for key, values in spa_counts.items():
     dict = {}
-    for p in pops:
+    for p in list(n_pop.keys()):
         dict[p] = 0
     for val in values:
         if val > 0:
             dict[pop_dict[my_keys[values.index(val)]]] += 1
-    shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
+    
+    # Correct the number by sample size
+    for p in list(dict.keys()):
+        dict[p] = (dict[p] / n_pop[p]) * 100
 
-    if max_count == 0:
-        shared_pop = '-'
+    # shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
+
+    # if max_count == 0:
+        # shared_pop = '-'
     
     rec = {
         "Animal_ID": key,
         "Own_Population": pop_dict[key],
-        "Shared_Population": shared_pop,
-        "SPA_Count": max_count,
+        # "Shared_Population": shared_pop,
+        # "SPA_Count": max_count,
     }
-    result_data.append(rec)
+    rec = {**rec, **dict}
+    temp_data.append(rec)
 
-result_data = pd.DataFrame(result_data)
+temp_data = pd.DataFrame(temp_data)
 
 print()
-print(result_data[result_data['SPA_Count'] > 0])
+print(temp_data)
+
+# Get the mean x variance for each population
+means_x_variances = {}
+for col in temp_data.columns[2:]:
+    means_x_variances[col] = temp_data[col].mean() * temp_data[col].var()
+
+# Get the population with max mean x variance
+max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
+
+result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa'})
+
+print()
+print(result_data[result_data['spa'] > 0])
