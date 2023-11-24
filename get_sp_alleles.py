@@ -2,6 +2,7 @@
 
 import sys
 import pysam
+import pandas as pd
 
 vcf_path = sys.argv[1]
 threshold = float(sys.argv[2]) # The max number of base pairs i.e. max distance between two SNPs to be considered
@@ -10,21 +11,24 @@ spa_criterion = int(sys.argv[4]) # The max number of distinct groups (apart from
 
 vcf = pysam.VariantFile(vcf_path)
 
-sample_alleles = {}
-
-previous_record = None
-group_i = 0
-
 # Get the population of each animal_i
 pop_file = './examples/DRZdivAlp1M.uTiere.TxT'
 with open(pop_file, 'r') as file:
     pop_lines = file.readlines()
     pop_dict = {}
+    pops = []
     for line in pop_lines:
         parts = line.split()
         animal_id = parts[1]
         pop = parts[2]
+        if pop not in pops:
+            pops.append(pop)
         pop_dict[animal_id] = pop
+
+sample_alleles = {}
+previous_record = None
+group_i = 0
+flag = False
 
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
@@ -33,7 +37,7 @@ for i, record in enumerate(vcf):
         previous_pos = record.pos
     else:
         previous_pos = previous_record.pos
-    flag = False
+
     # Continue only if the current position is lesser than previous one by the number of threshold base pairs.
     if current_pos - previous_pos < threshold:
         if group_i == group_size:
@@ -46,7 +50,6 @@ for i, record in enumerate(vcf):
 
                 sample_alleles[key] = values
             group_i = 0
-
             
         if flag:
             # Also Add the previous genotye to group
@@ -87,7 +90,6 @@ for i, record in enumerate(vcf):
 
                 sample_alleles[key] = values
         group_i = 0
-
     previous_record = record
 
 spa_counts = {}
@@ -95,6 +97,8 @@ for key, values in sample_alleles.items():
     sample_alleles[key] = values[0] + values[1]
     spa_counts[key] = [0] * len(sample_alleles)
 
+
+print('APPgoat1')
 print(sample_alleles['APPgoat1'])
 
 my_keys = list(sample_alleles.keys())
@@ -103,17 +107,47 @@ for key, values in sample_alleles.items():
     for allele in values:
         count = 0
         idx = []
+        pops_considered = []
         for key2, values2 in sample_alleles.items():
-            if pop_dict[key2] == pop1:
+            pop2 = pop_dict[key2]
+            if pop2 == pop1:
                 break
             if allele in values2:
-                count += 1
-                idx.append(key2) 
-            if count > spa_criterion+2:
+                if pop2 in pops_considered:
+                    idx.append(key2) 
+                else:
+                    pops_considered.append(pop2)
+                    count += 1
+                    idx.append(key2)
+            if count > spa_criterion:
                 break
-        if len(idx) > 0 and len(idx) <= spa_criterion+1:
+        if len(idx) > 0 and len(idx) <= spa_criterion:
             for i in idx:
                 spa_counts[key][my_keys.index(i)] += 1
 
-print(spa_counts['APPgoat1'])
+result_data = []
 
+for key, values in spa_counts.items():
+    dict = {}
+    for p in pops:
+        dict[p] = 0
+    for val in values:
+        if val > 0:
+            dict[pop_dict[my_keys[values.index(val)]]] += 1
+    shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
+
+    if max_count == 0:
+        shared_pop = '-'
+    
+    rec = {
+        "Animal_ID": key,
+        "Own_Population": pop_dict[key],
+        "Shared_Population": shared_pop,
+        "SPA_Count": max_count,
+    }
+    result_data.append(rec)
+
+result_data = pd.DataFrame(result_data)
+
+print()
+print(result_data[result_data['SPA_Count'] > 0])
