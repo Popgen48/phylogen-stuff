@@ -4,7 +4,7 @@ import sys
 import pysam
 
 vcf_path = sys.argv[1]
-threshold = float(sys.argv[2]) # The max number of base pairs i.e. distance between two SNPs to be considered
+threshold = float(sys.argv[2]) # The max number of base pairs i.e. max distance between two SNPs to be considered
 group_size = int(sys.argv[3]) # # Max grouping size of the haplotypes
 spa_criterion = int(sys.argv[4]) # The max number of distinct groups (apart from itself) in which an allele can be present to be classified as a semi-private allele
 
