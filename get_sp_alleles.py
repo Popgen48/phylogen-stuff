@@ -15,6 +15,17 @@ sample_alleles = {}
 previous_record = None
 group_i = 0
 
+# Get the population of each animal_i
+pop_file = './examples/DRZdivAlp1M.uTiere.TxT'
+with open(pop_file, 'r') as file:
+    pop_lines = file.readlines()
+    pop_dict = {}
+    for line in pop_lines:
+        parts = line.split()
+        animal_id = parts[1]
+        pop = parts[2]
+        pop_dict[animal_id] = pop
+
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
     current_pos = record.pos
@@ -23,7 +34,7 @@ for i, record in enumerate(vcf):
     else:
         previous_pos = previous_record.pos
     flag = False
-    # Continue only if the current position is greater than previous one by the number of threshold base pairs.
+    # Continue only if the current position is lesser than previous one by the number of threshold base pairs.
     if current_pos - previous_pos < threshold:
         if group_i == group_size:
             for key, values in sample_alleles.items():
@@ -40,25 +51,27 @@ for i, record in enumerate(vcf):
         if flag:
             # Also Add the previous genotye to group
             for sample in previous_record.samples:
-                if sample not in sample_alleles:
-                    sample_alleles[sample] = [[], []]
+                sample_name = '_'.join(sample.split('_')[1:])
+                if sample_name not in sample_alleles:
+                    sample_alleles[sample_name] = [[], []]
                 sample_values = previous_record.samples[sample]['GT']
                 allele1 = gt_map[sample_values[0]]
                 allele2 = gt_map[sample_values[1]]
-                sample_alleles[sample][0].append(allele1)
-                sample_alleles[sample][1].append(allele2)
+                sample_alleles[sample_name][0].append(allele1)
+                sample_alleles[sample_name][1].append(allele2)
             group_i += 1
             flag = False
 
         # Add the current genotye to group
         for sample in record.samples:
-            if sample not in sample_alleles:
-                sample_alleles[sample] = [[], []]
+            sample_name = '_'.join(sample.split('_')[1:])
+            if sample_name not in sample_alleles:
+                sample_alleles[sample_name] = [[], []]
             sample_values = record.samples[sample]['GT']       
             allele1 = gt_map[sample_values[0]]
             allele2 = gt_map[sample_values[1]]
-            sample_alleles[sample][0].append(allele1)
-            sample_alleles[sample][1].append(allele2)
+            sample_alleles[sample_name][0].append(allele1)
+            sample_alleles[sample_name][1].append(allele2)
         group_i += 1
     else:
         flag = True
@@ -82,22 +95,25 @@ for key, values in sample_alleles.items():
     sample_alleles[key] = values[0] + values[1]
     spa_counts[key] = [0] * len(sample_alleles)
 
-print(sample_alleles['AGT05'])
+print(sample_alleles['APPgoat1'])
 
 my_keys = list(sample_alleles.keys())
 for key, values in sample_alleles.items():
+    pop1 = pop_dict[key]
     for allele in values:
         count = 0
         idx = []
         for key2, values2 in sample_alleles.items():
+            if pop_dict[key2] == pop1:
+                break
             if allele in values2:
                 count += 1
                 idx.append(key2) 
             if count > spa_criterion+2:
                 break
-        if len(idx) <= spa_criterion+1:
+        if len(idx) > 0 and len(idx) <= spa_criterion+1:
             for i in idx:
                 spa_counts[key][my_keys.index(i)] += 1
 
-print(spa_counts['AGT05'])
+print(spa_counts['APPgoat1'])
 
