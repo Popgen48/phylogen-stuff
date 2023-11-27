@@ -31,66 +31,8 @@ sample_alleles = {}
 previous_record = None
 group_i = 0
 flag = False
-
-for i, record in enumerate(vcf):
-    gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
-    current_pos = record.pos
-    if not previous_record:
-        previous_pos = record.pos
-    else:
-        previous_pos = previous_record.pos
         
-    if current_pos - previous_pos < threshold:
-        if group_i == group_size:
-            for key, values in sample_alleles.items():
-                new_allele1 = [''.join(values[0][-group_i:])]
-                values[0] = values[0][:-group_i] + new_allele1
-
-                new_allele2 = [''.join(values[1][-group_i:])]
-                values[1] = values[1][:-group_i] + new_allele2
-
-                sample_alleles[key] = values
-            group_i = 0
-        else:
-            if flag:
-                # Also Add the previous genotye to group
-                for sample in previous_record.samples:
-                    sample_name = '_'.join(sample.split('_')[1:])
-                    if sample_name not in sample_alleles:
-                        sample_alleles[sample_name] = [[], []]
-                    sample_values = previous_record.samples[sample]['GT']
-                    allele1 = gt_map[sample_values[0]]
-                    allele2 = gt_map[sample_values[1]]
-                    sample_alleles[sample_name][0].append(allele1)
-                    sample_alleles[sample_name][1].append(allele2)
-                group_i += 1
-                flag = False
-
-        # Add the current genotype to group
-        for sample in record.samples:
-            sample_name = '_'.join(sample.split('_')[1:])
-            if sample_name not in sample_alleles:
-                sample_alleles[sample_name] = [[], []]
-            sample_values = record.samples[sample]['GT']       
-            allele1 = gt_map[sample_values[0]]
-            allele2 = gt_map[sample_values[1]]
-            sample_alleles[sample_name][0].append(allele1)
-            sample_alleles[sample_name][1].append(allele2)
-        group_i += 1
-    else:
-        flag = True
-        # Remove the alleles that did not form a group
-        if group_i != 0:
-            for key, values in sample_alleles.items():
-                values[0] = values[0][:-(group_i)]
-                values[1] = values[1][:-(group_i)]
-                # values[0] = [x for x in values[0][-group_size:] if len(x) == group_size]
-                # values[1] = [x for x in values[1][-group_size:] if len(x) == group_size]
-                sample_alleles[key] = values
-            group_i = 0
-    previous_record = record
         
-'''
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
     
@@ -153,7 +95,7 @@ for i, record in enumerate(vcf):
         flag = True
         if group_i == 0:
             continue
-        else:
+        elif group_i == group_size:
             for key, values in sample_alleles.items():
                 new_allele1 = [''.join(values[0][-group_i:])]
                 values[0] = values[0][:-group_i] + new_allele1
@@ -162,9 +104,20 @@ for i, record in enumerate(vcf):
                 values[1] = values[1][:-group_i] + new_allele2
 
                 sample_alleles[key] = values
+        else:
+            for key, values in sample_alleles.items():
+                # new_allele1 = [''.join(values[0][-group_i:])]
+                # values[0] = values[0][:-group_i] + new_allele1
+
+                # new_allele2 = [''.join(values[1][-group_i:])]
+                # values[1] = values[1][:-group_i] + new_allele2
+                
+                values[0] = values[0][:-group_i]
+                values[1] = values[1][:-group_i]
+
+                sample_alleles[key] = values
         group_i = 0
     previous_record = record
-'''
 
 spa_counts = {}
 for key, values in sample_alleles.items():
@@ -178,7 +131,7 @@ for key, values in sample_alleles.items():
 print('APPgoat1')
 #print('All alleles')
 #print(all_alleles['APPgoat1'])
-print('Grouped alleles')
+print(f'Grouped alleles: {len(sample_alleles["APPgoat1"])}')
 print(sample_alleles['APPgoat1'])
 
 my_keys = list(sample_alleles.keys())
@@ -216,8 +169,8 @@ for key, values in spa_counts.items():
             dict[pop_dict[my_keys[values.index(val)]]] += 1
     
     # Correct the number by sample size
-    for p in list(dict.keys()):
-        dict[p] = (dict[p] / n_pop[p]) * 100
+    # for p in list(dict.keys()):
+        # dict[p] = (dict[p] / n_pop[p]) * 100
 
     # shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
 
@@ -236,17 +189,27 @@ for key, values in spa_counts.items():
 temp_data = pd.DataFrame(temp_data)
 
 print()
-print(temp_data)
+print('Pop sizes')
+print(n_pop)
+
+print()
+columns_to_check = temp_data.columns[2:]
+print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
 
 # Get the mean x variance for each population
 means_x_variances = {}
 for col in temp_data.columns[2:]:
+    temp_data[col] = (temp_data[col] / n_pop[col]) * 100
     means_x_variances[col] = temp_data[col].mean() * temp_data[col].var()
 
 # Get the population with max mean x variance
 max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
 
-result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa'})
+result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa_'+max_mxv_pop})
 
 print()
-print(result_data[result_data['spa'] > 0])
+print(result_data[result_data['spa_'+max_mxv_pop] > 0])
+
+# print()
+# print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
+
