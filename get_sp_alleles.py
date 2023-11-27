@@ -27,12 +27,84 @@ with open(pop_file, 'r') as file:
         n_pop[pop] += 1
 
 sample_alleles = {}
+# all_alleles = {}
 previous_record = None
 group_i = 0
 flag = False
 
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
+    current_pos = record.pos
+    if not previous_record:
+        previous_pos = record.pos
+    else:
+        previous_pos = previous_record.pos
+        
+    if current_pos - previous_pos < threshold:
+        if group_i == group_size:
+            for key, values in sample_alleles.items():
+                new_allele1 = [''.join(values[0][-group_i:])]
+                values[0] = values[0][:-group_i] + new_allele1
+
+                new_allele2 = [''.join(values[1][-group_i:])]
+                values[1] = values[1][:-group_i] + new_allele2
+
+                sample_alleles[key] = values
+            group_i = 0
+        else:
+            if flag:
+                # Also Add the previous genotye to group
+                for sample in previous_record.samples:
+                    sample_name = '_'.join(sample.split('_')[1:])
+                    if sample_name not in sample_alleles:
+                        sample_alleles[sample_name] = [[], []]
+                    sample_values = previous_record.samples[sample]['GT']
+                    allele1 = gt_map[sample_values[0]]
+                    allele2 = gt_map[sample_values[1]]
+                    sample_alleles[sample_name][0].append(allele1)
+                    sample_alleles[sample_name][1].append(allele2)
+                group_i += 1
+                flag = False
+
+        # Add the current genotype to group
+        for sample in record.samples:
+            sample_name = '_'.join(sample.split('_')[1:])
+            if sample_name not in sample_alleles:
+                sample_alleles[sample_name] = [[], []]
+            sample_values = record.samples[sample]['GT']       
+            allele1 = gt_map[sample_values[0]]
+            allele2 = gt_map[sample_values[1]]
+            sample_alleles[sample_name][0].append(allele1)
+            sample_alleles[sample_name][1].append(allele2)
+        group_i += 1
+    else:
+        flag = True
+        # Remove the alleles that did not form a group
+        if group_i != 0:
+            for key, values in sample_alleles.items():
+                values[0] = values[0][:-(group_i)]
+                values[1] = values[1][:-(group_i)]
+                # values[0] = [x for x in values[0][-group_size:] if len(x) == group_size]
+                # values[1] = [x for x in values[1][-group_size:] if len(x) == group_size]
+                sample_alleles[key] = values
+            group_i = 0
+    previous_record = record
+        
+'''
+for i, record in enumerate(vcf):
+    gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
+    
+    # # Store all alleles 
+    # for sample in record.samples:
+    #     sample_name = '_'.join(sample.split('_')[1:])
+    #     if sample_name not in all_alleles:
+    #         all_alleles[sample_name] = ['', '']
+    #     sample_values = record.samples[sample]['GT']
+    #     allele1 = gt_map[sample_values[0]]
+    #     allele2 = gt_map[sample_values[1]]
+    #     all_alleles[sample_name][0] += allele1
+    #     all_alleles[sample_name][1] += allele2
+    
     current_pos = record.pos
     if not previous_record:
         previous_pos = record.pos
@@ -92,14 +164,21 @@ for i, record in enumerate(vcf):
                 sample_alleles[key] = values
         group_i = 0
     previous_record = record
+'''
 
 spa_counts = {}
 for key, values in sample_alleles.items():
+    # Filter out the block size
+    # values[0] = [x for x in values[0] if len(x) == group_size]
+    # values[1] = [x for x in values[1] if len(x) == group_size]
     sample_alleles[key] = values[0] + values[1]
     spa_counts[key] = [0] * len(sample_alleles)
 
 
 print('APPgoat1')
+#print('All alleles')
+#print(all_alleles['APPgoat1'])
+print('Grouped alleles')
 print(sample_alleles['APPgoat1'])
 
 my_keys = list(sample_alleles.keys())
@@ -122,7 +201,7 @@ for key, values in sample_alleles.items():
                     idx.append(key2)
             if count > spa_criterion:
                 break
-        if len(idx) > 0 and len(idx) <= spa_criterion:
+        if len(pops_considered) > 0 and len(pops_considered) <= spa_criterion:
             for i in idx:
                 spa_counts[key][my_keys.index(i)] += 1
 
