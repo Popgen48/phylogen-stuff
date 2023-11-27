@@ -8,6 +8,7 @@ vcf_path = sys.argv[1]
 threshold = float(sys.argv[2]) # The max number of base pairs i.e. max distance between two SNPs to be considered
 group_size = int(sys.argv[3]) # # Max grouping size of the haplotypes
 spa_criterion = int(sys.argv[4]) # The max number of distinct groups (apart from itself) in which an allele can be present to be classified as a semi-private allele
+maf_threshold = float(sys.argv[5]) # MAF value for filtering
 
 vcf = pysam.VariantFile(vcf_path)
 
@@ -26,12 +27,20 @@ with open(pop_file, 'r') as file:
         pop_dict[animal_id] = pop
         n_pop[pop] += 1
 
+def get_maf(record):
+    mafs = [0, 0]
+    for val in record.samples:
+        if record.samples[val]['GT'][0] != None:
+            mafs[record.samples[val]['GT'][0]] += 1
+        if record.samples[val]['GT'][1] != None:
+            mafs[record.samples[val]['GT'][1]] += 1
+    return min(mafs) / sum(mafs)
+
 sample_alleles = {}
 # all_alleles = {}
 previous_record = None
 group_i = 0
 flag = False
-        
         
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
@@ -53,6 +62,37 @@ for i, record in enumerate(vcf):
     else:
         previous_pos = previous_record.pos
 
+    # Check for MAF
+    maf = get_maf(record)
+    if maf < maf_threshold:
+        flag = True
+        if group_i == 0:
+            continue
+        elif group_i == group_size:
+            for key, values in sample_alleles.items():
+                new_allele1 = [''.join(values[0][-group_i:])]
+                values[0] = values[0][:-group_i] + new_allele1
+
+                new_allele2 = [''.join(values[1][-group_i:])]
+                values[1] = values[1][:-group_i] + new_allele2
+
+                sample_alleles[key] = values
+        else:
+            for key, values in sample_alleles.items():
+                # new_allele1 = [''.join(values[0][-group_i:])]
+                # values[0] = values[0][:-group_i] + new_allele1
+
+                # new_allele2 = [''.join(values[1][-group_i:])]
+                # values[1] = values[1][:-group_i] + new_allele2
+                
+                values[0] = values[0][:-group_i]
+                values[1] = values[1][:-group_i]
+
+                sample_alleles[key] = values
+        group_i = 0
+        previous_record = record
+        continue
+    
     # Continue only if the current position is lesser than previous one by the number of threshold base pairs.
     if current_pos - previous_pos < threshold:
         if group_i == group_size:
@@ -168,20 +208,9 @@ for key, values in spa_counts.items():
         if val > 0:
             dict[pop_dict[my_keys[values.index(val)]]] += 1
     
-    # Correct the number by sample size
-    # for p in list(dict.keys()):
-        # dict[p] = (dict[p] / n_pop[p]) * 100
-
-    # shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
-
-    # if max_count == 0:
-        # shared_pop = '-'
-    
     rec = {
         "Animal_ID": key,
         "Own_Population": pop_dict[key],
-        # "Shared_Population": shared_pop,
-        # "SPA_Count": max_count,
     }
     rec = {**rec, **dict}
     temp_data.append(rec)
@@ -199,7 +228,7 @@ print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
 # Get the mean x variance for each population
 means_x_variances = {}
 for col in temp_data.columns[2:]:
-    temp_data[col] = (temp_data[col] / n_pop[col]) * 100
+    temp_data[col] = round((temp_data[col] / n_pop[col]) * 100, 2) # correct the values by sample size
     means_x_variances[col] = temp_data[col].mean() * temp_data[col].var()
 
 # Get the population with max mean x variance
