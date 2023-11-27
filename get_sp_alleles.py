@@ -228,6 +228,7 @@ print(n_pop)
 print()
 columns_to_check = temp_data.columns[2:]
 print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
+temp_data.to_csv('temp_data.csv', index=False)
 
 # Get the mean x variance for each population
 means_x_variances = {}
@@ -242,7 +243,7 @@ result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(col
 
 print()
 print(result_data[result_data['spa_'+max_mxv_pop] > 0])
+result_data.to_csv('result_data.csv', index=False)
 
 # print()
 # print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
-
