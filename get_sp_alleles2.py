@@ -179,20 +179,21 @@ print('APPgoat1')
 #print('All alleles')
 #print(all_alleles['APPgoat1'])
 print('Grouped alleles')
-print(sample_alleles['APPgoat1'])
+print(set(sample_alleles['APPgoat1']))
+print(len(sample_alleles['APPgoat1']))
 
 my_keys = list(sample_alleles.keys())
 for key, values in sample_alleles.items():
     pop1 = pop_dict[key]
-    for allele in values:
+    for allele in set(values):
         count = 0
         idx = []
         pops_considered = []
         for key2, values2 in sample_alleles.items():
             pop2 = pop_dict[key2]
             if pop2 == pop1:
-                break
-            if allele in values2:
+                continue
+            if allele in set(values2):
                 if pop2 in pops_considered:
                     idx.append(key2) 
                 else:
@@ -216,8 +217,8 @@ for key, values in spa_counts.items():
             dict[pop_dict[my_keys[values.index(val)]]] += 1
     
     # Correct the number by sample size
-    for p in list(dict.keys()):
-        dict[p] = (dict[p] / n_pop[p]) * 100
+    # for p in list(dict.keys()):
+        # dict[p] = (dict[p] / n_pop[p]) * 100
 
     # shared_pop, max_count = max(dict.items(), key=lambda x: x[1])
 
@@ -236,12 +237,15 @@ for key, values in spa_counts.items():
 temp_data = pd.DataFrame(temp_data)
 
 print()
-print(temp_data)
+cols_to_check = temp_data.columns[2:]
+print(temp_data[(temp_data[cols_to_check] != 0).any(axis=1)])
+temp_data.to_csv('temp_data.csv', index=False)
 
 # Get the mean x variance for each population
 means_x_variances = {}
 for col in temp_data.columns[2:]:
-    means_x_variances[col] = temp_data[col].mean() * temp_data[col].var()
+    temp_data[col] = round((temp_data[col] / n_pop[col]) * 100, 2)
+    means_x_variances[col] = temp_data[col].mean() * temp_data[col].std()
 
 # Get the population with max mean x variance
 max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
@@ -250,3 +254,4 @@ result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(col
 
 print()
 print(result_data[result_data['spa'] > 0])
+result_data.to_csv('result_data.csv', index=False)
