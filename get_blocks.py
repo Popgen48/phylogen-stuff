@@ -12,6 +12,7 @@ temp = []
 
 previous_pos = 0
 previous_marker = None
+count = 0
 
 with open(output_file, 'w') as out_file:
     for line in map_lines:
@@ -29,10 +30,13 @@ with open(output_file, 'w') as out_file:
             else:
                 blocks = [temp[x:x+block_size] for x in range(0, len(temp), block_size)]
                 blocks = [x for x in blocks if len(x) == block_size]
-                out_file.write('-------------------------------------------------------------------\n')
-                out_file.write(f'{len(temp)} \t [{temp}]\n')
+                count += len(blocks)
+                # out_file.write('-------------------------------------------------------------------\n')
+                # out_file.write(f'{len(temp)} \t [{temp}]\n')
                 out_file.write(f'Blocks: {len(blocks)} \t {blocks}\n')
-                out_file.write('-------------------------------------------------------------------\n')
+                # out_file.write('-------------------------------------------------------------------\n')
+                temp = []
         previous_pos = current_pos
         previous_marker = marker
+    out_file.write(f'Total number of blocks: {count}\n')
     
