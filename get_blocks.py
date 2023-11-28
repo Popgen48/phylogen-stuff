@@ -23,6 +23,7 @@ with open(output_file, 'w') as out_file:
         if current_pos - previous_pos < threshold:
             if previous_marker:
                 temp.append(previous_marker)
+                previous_marker = None
             temp.append(marker)
         else:
             if len(temp) < block_size:
