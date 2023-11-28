@@ -10,7 +10,7 @@ with open(map_file, 'r') as file:
 
 temp = []
 
-previous_pos = 0
+previous_pos = int(map_lines[0].split()[3])
 previous_marker = None
 count = 0
 
@@ -40,4 +40,4 @@ with open(output_file, 'w') as out_file:
             previous_marker = marker
         previous_pos = current_pos
     out_file.write(f'Total number of blocks: {count}\n')
-    
+print(f'Total number of blocks: {count}')  
