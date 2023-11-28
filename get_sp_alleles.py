@@ -95,7 +95,9 @@ for i, record in enumerate(vcf):
     if current_pos - previous_pos < threshold:
         if previous_record:
             for sample in previous_record.samples:
-                sample_name = '_'.join(sample.split('_')[1:])
+                sample_name = sample # '_'.join(sample.split('_')[1:])
+                if sample_name not in sample_alleles:
+                    continue
                 # if sample_name not in sample_alleles:
                 #     sample_alleles[sample_name] = [[], []]
                 sample_values = previous_record.samples[sample]['GT']
@@ -105,7 +107,9 @@ for i, record in enumerate(vcf):
             previous_record = None
             
         for sample in record.samples:
-            sample_name = '_'.join(sample.split('_')[1:])
+            sample_name = sample # '_'.join(sample.split('_')[1:])
+            if sample_name not in sample_alleles:
+                    continue
             # if sample_name not in sample_alleles:
             #     sample_alleles[sample_name] = [[], []]
             sample_values = record.samples[sample]['GT']
