@@ -31,8 +31,8 @@ def compare(dict):
                         count += 1
                         idx.append(key2)
             if len(pops_considered) > 0 and len(pops_considered) <= spa_criterion:
-                for i in idx:
-                    spa_counts[key][my_keys.index(i)] += 1 
+                for i in pops_considered:
+                    spa_counts[key][pop_keys.index(i)] += 1 
                     
 def flush(dict):
     for key, values in dict.items():
@@ -54,13 +54,14 @@ with open(pop_file, 'r') as file:
             n_pop[pop] = 0
         pop_dict[animal_id] = pop
         n_pop[pop] += 1
+pop_keys = list(n_pop.keys())
 
 sample_alleles = {}
 spa_counts = {}
 
 for key in pop_dict.keys():
     sample_alleles[key] = [[], []]
-    spa_counts[key] = [0] * len(pop_dict.keys())
+    spa_counts[key] = [0] * len(n_pop.keys())
 my_keys = list(sample_alleles.keys())
 
 previous_record = None
@@ -131,10 +132,10 @@ temp_data = []
 for key, values in spa_counts.items():
     dict = {}
     for p in list(n_pop.keys()):
-        dict[p] = 0
-    for val in values:
-        if val > 0:
-            dict[pop_dict[my_keys[values.index(val)]]] += 1
+        dict[p] = values[pop_keys.index(p)]
+    # for val in values:
+        # if val > 0:
+            # dict[pop_dict[my_keys[values.index(val)]]] += 1
     
     rec = {
         "Animal_ID": key,
