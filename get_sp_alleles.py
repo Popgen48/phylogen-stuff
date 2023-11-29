@@ -6,8 +6,8 @@ import pandas as pd
 
 vcf_path = sys.argv[1]
 threshold = float(sys.argv[2]) # The max number of base pairs i.e. max distance between two SNPs to be considered
-group_size = int(sys.argv[3]) # # Max grouping size of the haplotypes
-spa_criterion = int(sys.argv[4]) # The max number of distinct groups (apart from itself) in which an allele can be present to be classified as a semi-private allele
+group_size = int(sys.argv[3]) # # Max grouping size of the haplotypes i.e. block size
+spa_criterion = int(sys.argv[4]) # The max number of distinct populations (apart from itself) in which an allele can be present to be classified as a semi-private allele
 
 def compare(dict):
     # my_keys = list(dict.keys())
@@ -127,8 +127,13 @@ for i, record in enumerate(vcf):
 
 print(f"Total blocks: {num_blocks}")
 
-temp_data = []
+spa_df = pd.DataFrame.from_dict(spa_counts, orient='index')
+spa_df = spa_df.transpose()
+spa_df.columns = pop_keys
+print('\nspa df')
+print(spa_df)
 
+temp_data = []
 for key, values in spa_counts.items():
     dict = {}
     for p in list(n_pop.keys()):
@@ -151,6 +156,7 @@ print('Pop sizes')
 print(n_pop)
 
 print()
+print('Temp data')
 columns_to_check = temp_data.columns[2:]
 print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
 temp_data.to_csv('temp_data.csv', index=False)
