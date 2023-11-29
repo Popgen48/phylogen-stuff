@@ -55,6 +55,8 @@ with open(pop_file, 'r') as file:
         pop_dict[animal_id] = pop
         n_pop[pop] += 1
 pop_keys = list(n_pop.keys())
+pop_keys = sorted(pop_keys, key=lambda x: int(x))
+n_pop = {k: n_pop[k] for k in sorted(n_pop, key=lambda x: int(x))}
 
 sample_alleles = {}
 spa_counts = {}
@@ -93,10 +95,10 @@ for i, record in enumerate(vcf):
         compare(sample_alleles)
         flush(sample_alleles)
     
-    if current_pos - previous_pos < threshold:
+    if current_pos - previous_pos <= threshold:
         if previous_record:
             for sample in previous_record.samples:
-                sample_name = sample # '_'.join(sample.split('_')[1:])
+                sample_name = sample 
                 if sample_name not in sample_alleles:
                     continue
                 # if sample_name not in sample_alleles:
@@ -108,7 +110,7 @@ for i, record in enumerate(vcf):
             previous_record = None
             
         for sample in record.samples:
-            sample_name = sample # '_'.join(sample.split('_')[1:])
+            sample_name = sample 
             if sample_name not in sample_alleles:
                     continue
             # if sample_name not in sample_alleles:
@@ -134,37 +136,16 @@ spa_df.reset_index(drop=True, inplace=True)
 pop_col = spa_df['Animal_ID'].map(pop_dict)
 spa_df.insert(1, 'Own_Population', pop_col)
 
-# spa_df = []
-# for key, values in spa_counts.items():
-#     dict = {}
-#     for p in list(n_pop.keys()):
-#         dict[p] = values[pop_keys.index(p)]
-#     # for val in values:
-#         # if val > 0:
-#             # dict[pop_dict[my_keys[values.index(val)]]] += 1
-    
-#     rec = {
-#         "Animal_ID": key,
-#         "Own_Population": pop_dict[key],
-#     }
-#     rec = {**rec, **dict}
-#     spa_df.append(rec)
-
-# spa_df = pd.DataFrame(spa_df)
+spa_df_sorted = spa_df.sort_values(by=['Own_Population'])
+spa_df_sorted.reset_index(drop=True, inplace=True)
 
 print()
 print('Pop sizes')
 print(n_pop)
 
 print('\nspa df')
-print(spa_df)
-spa_df.to_csv('spa_counts.csv', index=False)
-
-# print()
-# print('Temp data')
-# columns_to_check = spa_df.columns[2:]
-# print(spa_df[(spa_df[columns_to_check] != 0).any(axis=1)])
-# spa_df.to_csv('spa_df.csv', index=False)
+print(spa_df_sorted)
+spa_df_sorted.to_csv('spa_counts.csv', index=False)
 
 # Get the mean x variance for each population
 means_x_variances = {}
@@ -180,6 +161,3 @@ result_data = spa_df[["Animal_ID", "Own_Population", max_mxv_pop]].rename(column
 print()
 print(result_data[result_data['spa_'+max_mxv_pop] > 0])
 result_data.to_csv('result_data.csv', index=False)
-
-# print()
-# print(spa_df[(spa_df[columns_to_check] != 0).any(axis=1)])
