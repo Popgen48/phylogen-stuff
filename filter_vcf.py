@@ -15,12 +15,20 @@ def get_maf(record):
 
 vcf = pysam.VariantFile(vcf_path)
 
+map_file = './examples/DRZdivAlp1M_DRZdivA1m025_PLINK.map'
+markers = []
+with open(map_file, 'r') as file:
+    map_lines = file.readlines()
+    for line in map_lines:
+        marker = line.split()[1]
+        markers.append(marker)
+
 # Filter the vcf file by MAF
 filtered_vcf_path = vcf_path[:-4] + '_filtered.vcf' 
 filtered_vcf = pysam.VariantFile(filtered_vcf_path, 'w', header=vcf.header)
 for record in vcf:
     maf = get_maf(record)
-    if maf >= maf_threshold:
+    if maf >= maf_threshold and record.id in markers:
         filtered_vcf.write(record)
         
 vcf.close()
