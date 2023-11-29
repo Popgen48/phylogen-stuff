@@ -128,53 +128,58 @@ for i, record in enumerate(vcf):
 print(f"Total blocks: {num_blocks}")
 
 spa_df = pd.DataFrame.from_dict(spa_counts, orient='index')
-spa_df = spa_df.transpose()
 spa_df.columns = pop_keys
-print('\nspa df')
-print(spa_df)
+spa_df.insert(0, 'Animal_ID', spa_df.index)
+spa_df.reset_index(drop=True, inplace=True)
+pop_col = spa_df['Animal_ID'].map(pop_dict)
+spa_df.insert(1, 'Own_Population', pop_col)
 
-temp_data = []
-for key, values in spa_counts.items():
-    dict = {}
-    for p in list(n_pop.keys()):
-        dict[p] = values[pop_keys.index(p)]
-    # for val in values:
-        # if val > 0:
-            # dict[pop_dict[my_keys[values.index(val)]]] += 1
+# spa_df = []
+# for key, values in spa_counts.items():
+#     dict = {}
+#     for p in list(n_pop.keys()):
+#         dict[p] = values[pop_keys.index(p)]
+#     # for val in values:
+#         # if val > 0:
+#             # dict[pop_dict[my_keys[values.index(val)]]] += 1
     
-    rec = {
-        "Animal_ID": key,
-        "Own_Population": pop_dict[key],
-    }
-    rec = {**rec, **dict}
-    temp_data.append(rec)
+#     rec = {
+#         "Animal_ID": key,
+#         "Own_Population": pop_dict[key],
+#     }
+#     rec = {**rec, **dict}
+#     spa_df.append(rec)
 
-temp_data = pd.DataFrame(temp_data)
+# spa_df = pd.DataFrame(spa_df)
 
 print()
 print('Pop sizes')
 print(n_pop)
 
-print()
-print('Temp data')
-columns_to_check = temp_data.columns[2:]
-print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
-temp_data.to_csv('temp_data.csv', index=False)
+print('\nspa df')
+print(spa_df)
+spa_df.to_csv('spa_counts.csv', index=False)
+
+# print()
+# print('Temp data')
+# columns_to_check = spa_df.columns[2:]
+# print(spa_df[(spa_df[columns_to_check] != 0).any(axis=1)])
+# spa_df.to_csv('spa_df.csv', index=False)
 
 # Get the mean x variance for each population
 means_x_variances = {}
-for col in temp_data.columns[2:]:
-    temp_data[col] = round((temp_data[col] / n_pop[col]) * 100, 2) # correct the values by sample size
-    means_x_variances[col] = temp_data[col].mean() * temp_data[col].std()
+for col in spa_df.columns[2:]:
+    spa_df[col] = round((spa_df[col] / n_pop[col]) * 100, 2) # correct the values by sample size
+    means_x_variances[col] = spa_df[col].mean() * spa_df[col].std()
 
 # Get the population with max mean x variance
 max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
 
-result_data = temp_data[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa_'+max_mxv_pop})
+result_data = spa_df[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa_'+max_mxv_pop})
 
 print()
 print(result_data[result_data['spa_'+max_mxv_pop] > 0])
 result_data.to_csv('result_data.csv', index=False)
 
 # print()
-# print(temp_data[(temp_data[columns_to_check] != 0).any(axis=1)])
+# print(spa_df[(spa_df[columns_to_check] != 0).any(axis=1)])
