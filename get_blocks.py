@@ -31,10 +31,13 @@ with open(output_file, 'w') as out_file:
             else:
                 blocks = [temp[x:x+block_size] for x in range(0, len(temp), block_size)]
                 blocks = [x for x in blocks if len(x) == block_size]
+                b = ' '.join([str(x) for x in blocks])
+                b = b.replace('[', '').replace(']', '')
+                b = b.replace("'", "").replace(',', '')
                 count += len(blocks)
                 # out_file.write('-------------------------------------------------------------------\n')
                 # out_file.write(f'{len(temp)} \t [{temp}]\n')
-                out_file.write(f'{count} \t Blocks: {len(blocks)} \t {blocks}\n')
+                out_file.write(f'{count} \t Blocks: {len(blocks)} \t {b}\n')
                 # out_file.write('-------------------------------------------------------------------\n')
                 temp = []
             previous_marker = marker
