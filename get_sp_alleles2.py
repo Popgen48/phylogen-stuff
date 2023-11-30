@@ -139,13 +139,17 @@ def get_spa(vcf_path, threshold, group_size, spa_criterion):
     spa_df_sorted.to_csv('spa_counts.csv', index=False)
 
     # Get the mean x variance for each population
+    max_mean_x_variance = {}
     means_x_variances = {}
-    for col in spa_df.columns[2:]:
-        spa_df[col] = round((spa_df[col] / n_pop[col]) * 100, 2) # correct the values by sample size
-        means_x_variances[col] = spa_df[col].mean() * spa_df[col].std()
-
-    # Get the population with max mean x variance
-    max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
-    result_data = spa_df[["Animal_ID", "Pop_ID", max_mxv_pop]].rename(columns={max_mxv_pop: 'spa'})
+    for pop in pop_keys:
+        for col in spa_df.columns[2:]:
+            spa_df[spa_df['Pop_ID'] == pop][col] = round((spa_df[spa_df['Pop_ID'] == pop][col] / n_pop[col]) * 100, 2) # correct the values by sample size
+            means_x_variances[col] = spa_df[spa_df['Pop_ID'] == pop][col].mean() * spa_df[spa_df['Pop_ID'] == pop][col].std()
+            # Get the population with max mean x variance
+            max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
+            max_mean_x_variance[pop] = max_mxv_pop
+    
+    result_data = spa_df[["Animal_ID", "Pop_ID"]]
+    result_data['spa'] = spa_df[max_mean_x_variance[result_data['Pop_ID']]]
 
     return result_data

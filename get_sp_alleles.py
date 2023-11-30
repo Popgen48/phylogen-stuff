@@ -32,7 +32,10 @@ def compare(dict):
                         idx.append(key2)
             if len(pops_considered) > 0 and len(pops_considered) <= spa_criterion:
                 for i in pops_considered:
-                    spa_counts[key][pop_keys.index(i)] += 1 
+                    if key == 'FR_ALP0165' and i == '3':
+                        print(f'Animal: {idx} \t Pop: {i}')
+                        print(f'Block:{num_blocks} Str:{allele}')
+                    spa_counts[key][pop_keys.index(i)] += 1.0 
                     
 def flush(dict):
     for key, values in dict.items():
@@ -134,9 +137,9 @@ spa_df.columns = pop_keys
 spa_df.insert(0, 'Animal_ID', spa_df.index)
 spa_df.reset_index(drop=True, inplace=True)
 pop_col = spa_df['Animal_ID'].map(pop_dict)
-spa_df.insert(1, 'Own_Population', pop_col)
+spa_df.insert(1, 'Pop_ID', pop_col)
 
-spa_df_sorted = spa_df.sort_values(by=['Own_Population'])
+spa_df_sorted = spa_df.sort_values(by=['Pop_ID'])
 spa_df_sorted.reset_index(drop=True, inplace=True)
 
 print()
@@ -148,16 +151,26 @@ print(spa_df_sorted)
 spa_df_sorted.to_csv('spa_counts.csv', index=False)
 
 # Get the mean x variance for each population
-means_x_variances = {}
-for col in spa_df.columns[2:]:
-    spa_df[col] = round((spa_df[col] / n_pop[col]) * 100, 2) # correct the values by sample size
-    means_x_variances[col] = spa_df[col].mean() * spa_df[col].std()
+max_mean_x_variance = {}
 
-# Get the population with max mean x variance
-max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
+for pop in pop_keys:
+    means_x_variances = {}
+    for col in spa_df.columns[2:]:
+        spa_df.loc[spa_df['Pop_ID'] == pop, col] = round((spa_df[spa_df['Pop_ID'] == pop][col] / n_pop[col]) * 100, 2) # correct the values by sample size
+        means_x_variances[col] = spa_df[spa_df['Pop_ID'] == pop][col].mean() * spa_df[spa_df['Pop_ID'] == pop][col].std()
+        # Get the population with max mean x variance
+        max_mxv_pop = max(means_x_variances.items(), key=lambda x: x[1])[0]
+        max_mean_x_variance[pop] = max_mxv_pop
 
-result_data = spa_df[["Animal_ID", "Own_Population", max_mxv_pop]].rename(columns={'Own_Population': 'Pop_ID', max_mxv_pop: 'spa_'+max_mxv_pop})
+result_data = spa_df[["Animal_ID", "Pop_ID"]]
+
+def get_most_affluent_pop(row):
+    return row[max_mean_x_variance[row['Pop_ID']]]
+
+# result_data['spa'] = spa_df.apply(get_most_affluent_pop, axis=1)
+result_data['spa'] = spa_df.apply(lambda row: row[max_mean_x_variance[row['Pop_ID']]], axis=1)
+result_data['most_affluent_pop'] = spa_df.apply(lambda row: max_mean_x_variance[row['Pop_ID']], axis=1)
 
 print()
-print(result_data[result_data['spa_'+max_mxv_pop] > 0])
+print(result_data[result_data['spa'] > 0])
 result_data.to_csv('result_data.csv', index=False)

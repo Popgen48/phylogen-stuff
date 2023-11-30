@@ -34,7 +34,7 @@ with open(output_file, 'w') as out_file:
                 count += len(blocks)
                 # out_file.write('-------------------------------------------------------------------\n')
                 # out_file.write(f'{len(temp)} \t [{temp}]\n')
-                out_file.write(f'Blocks: {len(blocks)} \t {blocks}\n')
+                out_file.write(f'{count} \t Blocks: {len(blocks)} \t {blocks}\n')
                 # out_file.write('-------------------------------------------------------------------\n')
                 temp = []
             previous_marker = marker
