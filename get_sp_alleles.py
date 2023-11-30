@@ -32,9 +32,9 @@ def compare(dict):
                         idx.append(key2)
             if len(pops_considered) > 0 and len(pops_considered) <= spa_criterion:
                 for i in pops_considered:
-                    if key == 'FR_ALP0165' and i == '3':
-                        print(f'Animal: {idx} \t Pop: {i}')
-                        print(f'Block:{num_blocks} Str:{allele}')
+                    # if key == 'FR_ALP0165' and i == '3':
+                    #     print(f'Animal: {idx} \t Pop: {i}')
+                    #     print(f'Block:{num_blocks} Str:{allele}')
                     spa_counts[key][pop_keys.index(i)] += 1.0 
                     
 def flush(dict):

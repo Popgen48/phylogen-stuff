@@ -1,0 +1,1 @@
+awk 'NR==FNR{a[$2];next}!($2 in a){print}' FS="\t" DRZdivAlp1M_DRZdivA1m025_PLINK.map FS="\t" DRZdivAlp1M_DRZdivA1m025_true_filtered.map | wc -l
