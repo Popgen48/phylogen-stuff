@@ -98,7 +98,7 @@ for i, record in enumerate(vcf):
         compare(sample_alleles)
         flush(sample_alleles)
     
-    if current_pos - previous_pos <= threshold:
+    if current_pos - previous_pos <= threshold and current_pos - previous_pos > 0:
         if previous_record:
             for sample in previous_record.samples:
                 sample_name = sample 

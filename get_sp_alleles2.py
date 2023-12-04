@@ -90,7 +90,7 @@ def get_spa(vcf_path, threshold, group_size, spa_criterion):
             # Compare 
             compare(sample_alleles, spa_criterion)
             flush(sample_alleles)
-        if current_pos - previous_pos <= threshold:
+        if current_pos - previous_pos <= threshold and current_pos - previous_pos > 0:
             if previous_record:
                 for sample in previous_record.samples:
                     sample_name = sample 

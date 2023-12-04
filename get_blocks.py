@@ -20,7 +20,7 @@ with open(output_file, 'w') as out_file:
         current_pos = int(parts[3])
         marker = parts[1]
         
-        if current_pos - previous_pos < threshold:
+        if current_pos - previous_pos < threshold and current_pos - previous_pos > 0:
             if previous_marker:
                 temp.append(previous_marker)
                 previous_marker = None
