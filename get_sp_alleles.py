@@ -73,6 +73,7 @@ previous_record = None
 previous_pos = 0
 group_i = 0
 num_blocks = 0
+block_markers = []
         
 for i, record in enumerate(vcf):
     gt_map = {0: record.ref, 1: record.alts[0], None: '-'}
@@ -91,6 +92,13 @@ for i, record in enumerate(vcf):
 
             sample_alleles[key] = values
         
+        # Write the markers to a file
+        with open('marker_blocks.txt', 'a') as mfile:
+            for m in block_markers:
+                mfile.write(m+'\t')
+            mfile.write('\n')
+        block_markers = []
+
         # Add the block to counter
         num_blocks += 1
         
@@ -100,6 +108,7 @@ for i, record in enumerate(vcf):
     
     if current_pos - previous_pos <= threshold and current_pos - previous_pos > 0:
         if previous_record:
+            block_markers.append(previous_record.id)
             for sample in previous_record.samples:
                 sample_name = sample 
                 if sample_name not in sample_alleles:
@@ -111,7 +120,8 @@ for i, record in enumerate(vcf):
                 sample_alleles[sample_name][1].append(gt_map[sample_values[1]])
             group_i += 1
             previous_record = None
-            
+        
+        block_markers.append(record.id)
         for sample in record.samples:
             sample_name = sample 
             if sample_name not in sample_alleles:
@@ -125,6 +135,7 @@ for i, record in enumerate(vcf):
     
     else:
         group_i = 0
+        block_markers = []
         flush(sample_alleles)
         previous_record = record
         

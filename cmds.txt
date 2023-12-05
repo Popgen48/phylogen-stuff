@@ -1,1 +1,7 @@
 awk 'NR==FNR{a[$2];next}!($2 in a){print}' FS="\t" DRZdivAlp1M_DRZdivA1m025_PLINK.map FS="\t" DRZdivAlp1M_DRZdivA1m025_true_filtered.map | wc -l
+
+remove empty lines: sed -i '/^[ \t]*$/d' blocks1.txt
+
+remove whitespace in the beginning: sed -i 's/^[ ]*//' blocks1.txt
+
+remove tab at end: sed -i 's/\t$//' blocks2.txt
